@@ -5,12 +5,18 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
+
+// CORS setup for Koyeb
 const io = socketIo(server, {
     cors: {
         origin: "*",
-        methods: ["GET", "POST"]
+        methods: ["GET", "POST"],
+        credentials: true
     },
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    allowEIO3: true,
+    pingTimeout: 60000,
+    pingInterval: 25000
 });
 
 // Health check endpoint for Koyeb
@@ -18,6 +24,7 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
+// Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Game rooms storage
@@ -390,6 +397,6 @@ function generateRoomId() {
 }
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
