@@ -2,7 +2,7 @@
 <html lang="si">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Online Carrom - Multiplayer Game</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
@@ -12,6 +12,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
@@ -23,18 +24,22 @@
             align-items: center;
             color: white;
             overflow-x: hidden;
+            position: relative;
         }
         
         .game-header {
             text-align: center;
-            padding: 20px;
+            padding: 15px 10px;
             width: 100%;
             background: rgba(0,0,0,0.3);
             backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         
         .game-header h1 {
-            font-size: 2.5rem;
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
             background: linear-gradient(45deg, #f39c12, #e74c3c);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -45,16 +50,16 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            margin-top: 10px;
-            padding: 8px 16px;
+            margin-top: 8px;
+            padding: 6px 12px;
             background: rgba(255,255,255,0.1);
             border-radius: 20px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
         
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background: #e74c3c;
             animation: pulse 2s infinite;
@@ -73,29 +78,33 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 30px;
-            padding: 20px;
+            gap: 20px;
+            padding: 15px;
             max-width: 1400px;
             width: 100%;
+            flex: 1;
         }
         
         .game-section {
             display: flex;
             flex-direction: column;
             align-items: center;
+            width: 100%;
+            max-width: 600px;
         }
         
         .carrom-board {
-            width: 600px;
-            height: 600px;
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 1;
             background: linear-gradient(145deg, #8B4513, #A0522D);
             border-radius: 20px;
             position: relative;
             box-shadow: 
                 0 20px 60px rgba(0,0,0,0.5),
                 inset 0 0 100px rgba(0,0,0,0.3),
-                0 0 0 15px #654321,
-                0 0 0 20px #3d2817;
+                0 0 0 12px #654321,
+                0 0 0 16px #3d2817;
             overflow: hidden;
         }
         
@@ -151,24 +160,30 @@
             position: absolute;
             top: 40px;
             left: 40px;
+            width: calc(100% - 80px);
+            height: calc(100% - 80px);
             border-radius: 10px;
             cursor: crosshair;
+            touch-action: none;
         }
         
         .player-info {
             display: flex;
-            gap: 20px;
-            margin-top: 20px;
+            gap: 15px;
+            margin-top: 15px;
             flex-wrap: wrap;
             justify-content: center;
+            width: 100%;
         }
         
         .player-card {
             background: rgba(255,255,255,0.1);
-            padding: 15px 25px;
-            border-radius: 15px;
+            padding: 12px 20px;
+            border-radius: 12px;
             text-align: center;
-            min-width: 150px;
+            min-width: 120px;
+            flex: 1;
+            max-width: 200px;
             transition: all 0.3s;
             border: 2px solid transparent;
         }
@@ -176,7 +191,7 @@
         .player-card.active {
             border-color: #f39c12;
             background: rgba(243, 156, 18, 0.2);
-            transform: scale(1.05);
+            transform: scale(1.02);
         }
         
         .player-card.winner {
@@ -187,39 +202,41 @@
         
         @keyframes winnerPulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.05); }
         }
         
         .player-name {
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
             margin-bottom: 5px;
+            word-break: break-word;
         }
         
         .player-color {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             display: inline-block;
-            margin: 5px;
+            margin: 3px;
             border: 2px solid white;
         }
         
         .score {
-            font-size: 1.5rem;
+            font-size: clamp(1.2rem, 4vw, 1.5rem);
             font-weight: 800;
             color: #f39c12;
         }
         
         .controls-section {
             background: rgba(255,255,255,0.05);
-            padding: 25px;
+            padding: 20px;
             border-radius: 20px;
-            min-width: 300px;
+            width: 100%;
+            max-width: 400px;
         }
         
         .room-controls {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         
         .input-group {
@@ -228,33 +245,39 @@
         
         .input-group label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
             font-size: 0.9rem;
-            opacity: 0.8;
+            opacity: 0.9;
+            font-weight: 500;
         }
         
         .input-group input {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             border: none;
-            border-radius: 10px;
-            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.15);
             color: white;
             font-size: 1rem;
             outline: none;
             transition: all 0.3s;
+            font-family: inherit;
+        }
+        
+        .input-group input::placeholder {
+            color: rgba(255,255,255,0.5);
         }
         
         .input-group input:focus {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.25);
             box-shadow: 0 0 20px rgba(243, 156, 18, 0.3);
         }
         
         .btn {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
@@ -262,6 +285,7 @@
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-family: inherit;
         }
         
         .btn-primary {
@@ -280,6 +304,10 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
         
+        .btn:active {
+            transform: translateY(0);
+        }
+        
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -288,24 +316,25 @@
         
         .game-log {
             background: rgba(0,0,0,0.3);
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 15px;
-            height: 200px;
+            height: 180px;
             overflow-y: auto;
-            margin-top: 20px;
+            margin-top: 15px;
         }
         
         .game-log h3 {
             margin-bottom: 10px;
             color: #f39c12;
+            font-size: 1rem;
         }
         
         .log-entry {
             padding: 8px;
             margin-bottom: 5px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 5px;
-            font-size: 0.9rem;
+            background: rgba(255,255,255,0.08);
+            border-radius: 6px;
+            font-size: 0.85rem;
             animation: slideIn 0.3s;
         }
         
@@ -318,7 +347,13 @@
             margin-top: 15px;
             background: rgba(0,0,0,0.3);
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 12px;
+        }
+        
+        .power-meter label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
         }
         
         .power-bar {
@@ -341,10 +376,11 @@
         .turn-indicator {
             text-align: center;
             margin-top: 15px;
-            padding: 10px;
+            padding: 12px;
             background: rgba(243, 156, 18, 0.2);
-            border-radius: 10px;
+            border-radius: 12px;
             font-weight: 600;
+            font-size: 0.95rem;
         }
         
         .waiting-overlay {
@@ -353,13 +389,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.95);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
             backdrop-filter: blur(10px);
+            padding: 20px;
         }
         
         .waiting-overlay.hidden {
@@ -367,8 +404,8 @@
         }
         
         .loader {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             border: 4px solid rgba(243, 156, 18, 0.3);
             border-top-color: #f39c12;
             border-radius: 50%;
@@ -380,56 +417,46 @@
             to { transform: rotate(360deg); }
         }
         
-        .strike-line {
-            position: absolute;
-            pointer-events: none;
-            z-index: 100;
-            transform-origin: left center;
+        .waiting-overlay h2 {
+            font-size: clamp(1.3rem, 5vw, 1.8rem);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .waiting-overlay p {
+            opacity: 0.8;
+            text-align: center;
+            font-size: clamp(0.9rem, 3vw, 1rem);
         }
         
         .error-message {
             color: #e74c3c;
             text-align: center;
-            margin-top: 10px;
-            padding: 10px;
+            margin-top: 15px;
+            padding: 12px;
             background: rgba(231, 76, 60, 0.2);
             border-radius: 10px;
             display: none;
+            max-width: 400px;
+            width: 100%;
         }
         
         .error-message.show {
             display: block;
         }
         
-        @media (max-width: 768px) {
-            .carrom-board {
-                width: 350px;
-                height: 350px;
-            }
-            
-            canvas {
-                top: 23px;
-                left: 23px;
-                width: 304px !important;
-                height: 304px !important;
-            }
-            
-            .game-header h1 {
-                font-size: 1.8rem;
-            }
-        }
-        
         .rules-section {
-            margin-top: 20px;
+            margin-top: 15px;
             padding: 15px;
             background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-            font-size: 0.9rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
         }
         
         .rules-section h4 {
             color: #f39c12;
             margin-bottom: 10px;
+            font-size: 0.95rem;
         }
         
         .rules-section ul {
@@ -438,8 +465,8 @@
         }
         
         .rules-section li {
-            padding: 5px 0;
-            padding-left: 20px;
+            padding: 4px 0;
+            padding-left: 18px;
             position: relative;
         }
         
@@ -448,6 +475,76 @@
             position: absolute;
             left: 0;
             color: #f39c12;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 10px;
+                gap: 15px;
+            }
+            
+            .carrom-board {
+                border-radius: 15px;
+                box-shadow: 
+                    0 10px 30px rgba(0,0,0,0.5),
+                    inset 0 0 50px rgba(0,0,0,0.3),
+                    0 0 0 8px #654321,
+                    0 0 0 12px #3d2817;
+            }
+            
+            .board-inner {
+                top: 25px;
+                left: 25px;
+                right: 25px;
+                bottom: 25px;
+            }
+            
+            canvas {
+                top: 25px;
+                left: 25px;
+                width: calc(100% - 50px);
+                height: calc(100% - 50px);
+            }
+            
+            .pocket {
+                width: 35px;
+                height: 35px;
+            }
+            
+            .pocket.tl { top: 10px; left: 10px; }
+            .pocket.tr { top: 10px; right: 10px; }
+            .pocket.bl { bottom: 10px; left: 10px; }
+            .pocket.br { bottom: 10px; right: 10px; }
+            
+            .center-circle {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .controls-section {
+                padding: 15px;
+            }
+            
+            .player-card {
+                padding: 10px 15px;
+                min-width: 100px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-header {
+                padding: 10px;
+            }
+            
+            .input-group input {
+                padding: 12px;
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
+            
+            .btn {
+                padding: 12px;
+            }
         }
     </style>
 </head>
@@ -465,9 +562,22 @@
         <h2 id="waitingText">Connecting to Server...</h2>
         <p id="waitingSubtext">Please wait</p>
         <div class="error-message" id="errorMessage"></div>
+        
+        <!-- Room controls inside overlay -->
+        <div class="room-controls" id="roomControls" style="display: none; width: 100%; max-width: 400px; margin-top: 20px;">
+            <div class="input-group">
+                <label>Your Name</label>
+                <input type="text" id="playerName" placeholder="Enter your name" maxlength="15" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label>Room ID (optional)</label>
+                <input type="text" id="roomId" placeholder="Leave blank to create new room" autocomplete="off">
+            </div>
+            <button class="btn btn-primary" onclick="joinRoom()" id="joinBtn">Join / Create Room</button>
+        </div>
     </div>
 
-    <div class="main-container">
+    <div class="main-container" id="gameContainer" style="display: none;">
         <div class="game-section">
             <div class="carrom-board" id="board">
                 <div class="board-inner"></div>
@@ -495,18 +605,6 @@
         </div>
 
         <div class="controls-section">
-            <div class="room-controls" id="roomControls">
-                <div class="input-group">
-                    <label>Your Name</label>
-                    <input type="text" id="playerName" placeholder="Enter your name" maxlength="15">
-                </div>
-                <div class="input-group">
-                    <label>Room ID (optional)</label>
-                    <input type="text" id="roomId" placeholder="Leave blank to create new room">
-                </div>
-                <button class="btn btn-primary" onclick="joinRoom()" id="joinBtn">Join / Create Room</button>
-            </div>
-
             <div class="power-meter" id="powerMeter" style="display: none;">
                 <label>Strike Power</label>
                 <div class="power-bar">
@@ -584,7 +682,6 @@
         };
         
         function connectToServer() {
-            // Auto-detect server URL
             const serverUrl = window.location.origin;
             
             console.log('Connecting to:', serverUrl);
@@ -601,11 +698,14 @@
                 console.log('Connected!');
                 reconnectAttempts = 0;
                 updateConnectionStatus(true);
+                
+                // Show room controls
+                document.getElementById('loader').style.display = 'none';
                 document.getElementById('waitingText').textContent = 'Enter Room Details';
                 document.getElementById('waitingSubtext').textContent = 'Create or join a room to start playing';
-                document.getElementById('loader').style.display = 'none';
                 document.getElementById('roomControls').style.display = 'block';
                 document.getElementById('errorMessage').classList.remove('show');
+                
                 log('Connected to server');
             });
             
@@ -614,27 +714,31 @@
                 reconnectAttempts++;
                 
                 if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-                    showError('Failed to connect to server. Please refresh the page.');
+                    showError('Failed to connect. Please check your internet and refresh.');
                     document.getElementById('loader').style.display = 'none';
                 } else {
-                    document.getElementById('waitingSubtext').textContent = `Reconnecting... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`;
+                    document.getElementById('waitingSubtext').textContent = `Retrying... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`;
                 }
             });
             
             socket.on('disconnect', (reason) => {
                 console.log('Disconnected:', reason);
                 updateConnectionStatus(false);
-                log('Disconnected from server: ' + reason);
+                log('Disconnected: ' + reason);
             });
             
             socket.on('roomJoined', (data) => {
                 roomId = data.roomId;
                 playerNumber = data.playerNumber;
+                
+                // Hide overlay and show game
                 document.getElementById('waitingOverlay').classList.add('hidden');
-                document.getElementById('roomControls').style.display = 'none';
+                document.getElementById('gameContainer').style.display = 'flex';
+                
                 document.getElementById('powerMeter').style.display = 'block';
                 document.getElementById('turnIndicator').style.display = 'block';
                 document.getElementById('resetBtn').style.display = 'block';
+                
                 log(`Joined room ${roomId} as Player ${playerNumber}`);
                 updatePlayerInfo(data.players);
             });
@@ -665,21 +769,18 @@
             socket.on('gameOver', (data) => {
                 const winnerCard = document.getElementById(`player${data.winner}Card`);
                 winnerCard.classList.add('winner');
-                log(`🎉 ${data.winnerName} WINS THE GAME! 🎉`);
-                setTimeout(() => {
-                    alert(`🎉 ${data.winnerName} WINS! 🎉`);
-                }, 100);
+                log(`🎉 ${data.winnerName} WINS! 🎉`);
+                setTimeout(() => alert(`🎉 ${data.winnerName} WINS! 🎉`), 100);
             });
             
             socket.on('gameReset', () => {
-                document.querySelectorAll('.player-card').forEach(card => {
-                    card.classList.remove('winner');
-                });
+                document.querySelectorAll('.player-card').forEach(card => card.classList.remove('winner'));
                 log('Game reset');
             });
             
             socket.on('error', (msg) => {
                 showError(msg);
+                document.getElementById('joinBtn').disabled = false;
             });
         }
         
@@ -687,9 +788,7 @@
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = msg;
             errorDiv.classList.add('show');
-            setTimeout(() => {
-                errorDiv.classList.remove('show');
-            }, 5000);
+            setTimeout(() => errorDiv.classList.remove('show'), 5000);
         }
         
         function updateConnectionStatus(connected) {
@@ -709,13 +808,15 @@
             const room = document.getElementById('roomId').value.trim();
             
             if (!name) {
-                showError('Please enter your name');
+                showError('Please enter your name!');
                 return;
             }
             
             document.getElementById('joinBtn').disabled = true;
-            document.getElementById('waitingText').textContent = 'Joining Room...';
-            document.getElementById('waitingSubtext').textContent = 'Please wait...';
+            document.getElementById('waitingText').textContent = 'Joining...';
+            document.getElementById('waitingSubtext').textContent = 'Please wait';
+            document.getElementById('roomControls').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
             
             socket.emit('joinRoom', { name, roomId: room });
         }
@@ -754,7 +855,6 @@
             const rect = canvas.getBoundingClientRect();
             const pos = getEventPos(e, rect);
             
-            // Check if clicking near striker
             const striker = localCoins.find(c => c.type === 'striker');
             if (striker) {
                 const dist = Math.hypot(pos.x - striker.x, pos.y - striker.y);
@@ -772,7 +872,6 @@
             const rect = canvas.getBoundingClientRect();
             dragCurrent = getEventPos(e, rect);
             
-            // Calculate power
             const dx = dragStart.x - dragCurrent.x;
             const dy = dragStart.y - dragCurrent.y;
             const distance = Math.hypot(dx, dy);
@@ -830,7 +929,6 @@
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Draw aim line
             if (isDragging && dragStart && dragCurrent) {
                 ctx.beginPath();
                 ctx.moveTo(dragStart.x, dragStart.y);
@@ -841,7 +939,6 @@
                 ctx.stroke();
                 ctx.setLineDash([]);
                 
-                // Draw projected path
                 const dx = dragStart.x - dragCurrent.x;
                 const dy = dragStart.y - dragCurrent.y;
                 const distance = Math.hypot(dx, dy);
@@ -859,7 +956,6 @@
                 ctx.stroke();
             }
             
-            // Draw coins
             if (localCoins) {
                 localCoins.forEach(coin => {
                     if (!coin.pocketed) {
@@ -893,13 +989,11 @@
             ctx.fill();
             ctx.stroke();
             
-            // Add shine effect
             ctx.beginPath();
             ctx.arc(coin.x - 3, coin.y - 3, (coin.radius || COIN_RADIUS) / 3, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(255,255,255,0.3)';
             ctx.fill();
             
-            // Queen marker
             if (coin.type === 'queen') {
                 ctx.beginPath();
                 ctx.arc(coin.x, coin.y, 6, 0, Math.PI * 2);
@@ -921,7 +1015,6 @@
             entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             logContent.insertBefore(entry, logContent.firstChild);
             
-            // Keep only last 20 entries
             while (logContent.children.length > 20) {
                 logContent.removeChild(logContent.lastChild);
             }
