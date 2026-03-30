@@ -387,6 +387,20 @@
             transform-origin: left center;
         }
         
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(231, 76, 60, 0.2);
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
         @media (max-width: 768px) {
             .carrom-board {
                 width: 350px;
@@ -442,14 +456,15 @@
         <h1>🏆 ONLINE CARROM 🏆</h1>
         <div class="connection-status">
             <span class="status-dot" id="statusDot"></span>
-            <span id="statusText">Disconnected</span>
+            <span id="statusText">Connecting...</span>
         </div>
     </div>
 
     <div class="waiting-overlay" id="waitingOverlay">
-        <div class="loader"></div>
-        <h2 id="waitingText">Enter Room Details</h2>
-        <p id="waitingSubtext">Create or join a room to start playing</p>
+        <div class="loader" id="loader"></div>
+        <h2 id="waitingText">Connecting to Server...</h2>
+        <p id="waitingSubtext">Please wait</p>
+        <div class="error-message" id="errorMessage"></div>
     </div>
 
     <div class="main-container">
@@ -486,10 +501,10 @@
                     <input type="text" id="playerName" placeholder="Enter your name" maxlength="15">
                 </div>
                 <div class="input-group">
-                    <label>Room ID</label>
-                    <input type="text" id="roomId" placeholder="Enter room ID or leave blank to create">
+                    <label>Room ID (optional)</label>
+                    <input type="text" id="roomId" placeholder="Leave blank to create new room">
                 </div>
-                <button class="btn btn-primary" onclick="joinRoom()">Join / Create Room</button>
+                <button class="btn btn-primary" onclick="joinRoom()" id="joinBtn">Join / Create Room</button>
             </div>
 
             <div class="power-meter" id="powerMeter" style="display: none;">
@@ -548,6 +563,8 @@
         let power = 0;
         let animationId;
         let localCoins = [];
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 5;
         
         // Initialize
         window.onload = function() {
@@ -561,24 +578,53 @@
             canvas.addEventListener('mousedown', handleInputStart);
             canvas.addEventListener('mousemove', handleInputMove);
             canvas.addEventListener('mouseup', handleInputEnd);
-            canvas.addEventListener('touchstart', handleTouchStart);
-            canvas.addEventListener('touchmove', handleTouchMove);
+            canvas.addEventListener('touchstart', handleTouchStart, {passive: false});
+            canvas.addEventListener('touchmove', handleTouchMove, {passive: false});
             canvas.addEventListener('touchend', handleInputEnd);
         };
         
         function connectToServer() {
-            // Replace with your Koyeb server URL
+            // Auto-detect server URL
             const serverUrl = window.location.origin;
-            socket = io(serverUrl);
+            
+            console.log('Connecting to:', serverUrl);
+            
+            socket = io(serverUrl, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: MAX_RECONNECT_ATTEMPTS,
+                reconnectionDelay: 1000,
+                timeout: 20000
+            });
             
             socket.on('connect', () => {
+                console.log('Connected!');
+                reconnectAttempts = 0;
                 updateConnectionStatus(true);
+                document.getElementById('waitingText').textContent = 'Enter Room Details';
+                document.getElementById('waitingSubtext').textContent = 'Create or join a room to start playing';
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('roomControls').style.display = 'block';
+                document.getElementById('errorMessage').classList.remove('show');
                 log('Connected to server');
             });
             
-            socket.on('disconnect', () => {
+            socket.on('connect_error', (error) => {
+                console.error('Connection error:', error);
+                reconnectAttempts++;
+                
+                if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                    showError('Failed to connect to server. Please refresh the page.');
+                    document.getElementById('loader').style.display = 'none';
+                } else {
+                    document.getElementById('waitingSubtext').textContent = `Reconnecting... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`;
+                }
+            });
+            
+            socket.on('disconnect', (reason) => {
+                console.log('Disconnected:', reason);
                 updateConnectionStatus(false);
-                log('Disconnected from server');
+                log('Disconnected from server: ' + reason);
             });
             
             socket.on('roomJoined', (data) => {
@@ -620,7 +666,9 @@
                 const winnerCard = document.getElementById(`player${data.winner}Card`);
                 winnerCard.classList.add('winner');
                 log(`🎉 ${data.winnerName} WINS THE GAME! 🎉`);
-                alert(`🎉 ${data.winnerName} WINS! 🎉`);
+                setTimeout(() => {
+                    alert(`🎉 ${data.winnerName} WINS! 🎉`);
+                }, 100);
             });
             
             socket.on('gameReset', () => {
@@ -631,8 +679,17 @@
             });
             
             socket.on('error', (msg) => {
-                alert(msg);
+                showError(msg);
             });
+        }
+        
+        function showError(msg) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = msg;
+            errorDiv.classList.add('show');
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
         }
         
         function updateConnectionStatus(connected) {
@@ -648,9 +705,15 @@
         }
         
         function joinRoom() {
-            const name = document.getElementById('playerName').value.trim() || 'Player';
+            const name = document.getElementById('playerName').value.trim();
             const room = document.getElementById('roomId').value.trim();
             
+            if (!name) {
+                showError('Please enter your name');
+                return;
+            }
+            
+            document.getElementById('joinBtn').disabled = true;
             document.getElementById('waitingText').textContent = 'Joining Room...';
             document.getElementById('waitingSubtext').textContent = 'Please wait...';
             
